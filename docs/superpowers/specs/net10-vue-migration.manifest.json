@@ -1,0 +1,7 @@
+{
+  "spec": "docs/superpowers/specs/net10-vue-migration.md",
+  "sha256": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+  "designSource": "docs/superpowers/specs/2026-08-13-net10-vue-migration-design.md",
+  "designSourceSha256": "619c3614af2ae1ba9c0a69fb6ad759501caf1e220b079c755f05992353c1e84a",
+  "approved": true
+}

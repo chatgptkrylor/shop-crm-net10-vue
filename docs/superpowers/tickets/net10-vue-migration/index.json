@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "feature_id": "net10-vue-migration",
+  "spec_path": "docs/superpowers/specs/net10-vue-migration.md",
+  "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+  "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+  "tickets": [
+    {
+      "schema_version": 1,
+      "id": "T01",
+      "title": "Toolchain, SQL Server, and project skeletons with /health endpoint",
+      "risk": "high",
+      "risk_reasons": [
+        "Installs system-level tooling (.NET 10 preview SDK, SQL Server 2022) on the host",
+        "Provisions the database and stores the SA password in user-secrets",
+        "Creates the solution and project skeletons that all later tickets depend on"
+      ],
+      "depends_on": [],
+      "owns": [
+        "scripts/install-toolchain.sh",
+        "src/backend-net10/ShopApi.sln",
+        "src/backend-net10/ShopApi/Program.cs",
+        "src/backend-net10/ShopApi/ShopApi.csproj",
+        "src/backend-net10/ShopApi/appsettings.json",
+        "src/backend-net10/ShopApi/appsettings.Development.json",
+        "src/backend-net10/ShopApi/sql/schema.sql",
+        "src/backend-net10/ShopApi/wwwroot/.gitkeep",
+        "src/backend-net10/ShopApi.Tests/ShopApi.Tests.csproj",
+        "src/frontend-vue/package.json",
+        "src/frontend-vue/vite.config.ts",
+        "src/frontend-vue/tsconfig.json",
+        "src/frontend-vue/src/main.ts",
+        "src/frontend-vue/src/App.vue",
+        "tests/smoke-health.sh"
+      ],
+      "verification_commands": [
+        "dotnet build src/backend-net10/ShopApi.sln",
+        "ASPNETCORE_URLS=http://localhost:5000 dotnet run --project src/backend-net10/ShopApi & sleep 3 && curl -sf http://localhost:5000/health && kill %1",
+        "bash tests/smoke-health.sh",
+        "cd src/frontend-vue && npm install && npm run build"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    },
+    {
+      "schema_version": 1,
+      "id": "T02",
+      "title": "Login (JWT auth) — API + Vue login page + route guard",
+      "risk": "high",
+      "risk_reasons": [
+        "Authentication boundary: issues and validates JWTs",
+        "Handles credentials and password verification (BCrypt)",
+        "Sets the httpOnly auth cookie consumed by every later ticket"
+      ],
+      "depends_on": ["T01"],
+      "owns": [
+        "src/backend-net10/ShopApi/Controllers/AccountController.cs",
+        "src/backend-net10/ShopApi/Infrastructure/JwtTokenService.cs",
+        "src/backend-net10/ShopApi/Infrastructure/AuthExtensions.cs",
+        "src/backend-net10/ShopApi/Infrastructure/XRequestedWithFilter.cs",
+        "src/backend-net10/ShopApi/Infrastructure/DbConnectionFactory.cs",
+        "src/backend-net10/ShopApi/Repository/IRepositories.cs",
+        "src/backend-net10/ShopApi/Repository/UserRepository.cs",
+        "src/backend-net10/ShopApi/Models/LoginRequest.cs",
+        "src/backend-net10/ShopApi/Models/UserDto.cs",
+        "src/backend-net10/ShopApi.Tests/LoginTests.cs",
+        "src/backend-net10/ShopApi.Tests/AuthTests.cs",
+        "src/frontend-vue/src/views/LoginView.vue",
+        "src/frontend-vue/src/stores/auth.ts",
+        "src/frontend-vue/src/api/client.ts",
+        "src/frontend-vue/src/api/auth.ts",
+        "src/frontend-vue/src/router/index.ts",
+        "tests/smoke-auth.sh",
+        "tests/browser/login.spec.ts"
+      ],
+      "verification_commands": [
+        "dotnet test src/backend-net10/ShopApi.Tests",
+        "bash tests/smoke-auth.sh",
+        "cd src/frontend-vue && npm run type-check && npm run build",
+        "npx playwright test tests/browser/login.spec.ts"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    },
+    {
+      "schema_version": 1,
+      "id": "T03",
+      "title": "Dashboard — API + Vue dashboard view",
+      "risk": "normal",
+      "risk_reasons": [
+        "Read-only feature behind an existing auth boundary"
+      ],
+      "depends_on": ["T02"],
+      "owns": [
+        "src/backend-net10/ShopApi/Controllers/DashboardController.cs",
+        "src/backend-net10/ShopApi/Models/DashboardDto.cs",
+        "src/backend-net10/ShopApi/Models/StatusCountDto.cs",
+        "src/backend-net10/ShopApi/Repository/CustomerRepository.cs",
+        "src/backend-net10/ShopApi/Repository/InteractionRepository.cs",
+        "src/backend-net10/ShopApi/Models/Customer.cs",
+        "src/backend-net10/ShopApi/Models/Interaction.cs",
+        "src/backend-net10/ShopApi.Tests/DashboardTests.cs",
+        "src/frontend-vue/src/views/DashboardView.vue",
+        "src/frontend-vue/src/stores/dashboard.ts",
+        "src/frontend-vue/src/api/dashboard.ts",
+        "tests/browser/dashboard.spec.ts"
+      ],
+      "verification_commands": [
+        "dotnet test src/backend-net10/ShopApi.Tests --filter DashboardTests",
+        "bash tests/smoke-content.sh",
+        "cd src/frontend-vue && npm run type-check && npm run build",
+        "npx playwright test tests/browser/dashboard.spec.ts"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    },
+    {
+      "schema_version": 1,
+      "id": "T04",
+      "title": "Customer CRUD — API + Vue list/create/edit/details views",
+      "risk": "normal",
+      "risk_reasons": [
+        "Mutating endpoints (create/update/delete) but behind existing auth and CSRF guards"
+      ],
+      "depends_on": ["T03"],
+      "owns": [
+        "src/backend-net10/ShopApi/Controllers/CustomersController.cs",
+        "src/backend-net10/ShopApi/Models/CustomerDto.cs",
+        "src/backend-net10/ShopApi/Models/PagedResult.cs",
+        "src/backend-net10/ShopApi.Tests/CustomersTests.cs",
+        "src/frontend-vue/src/views/CustomersIndexView.vue",
+        "src/frontend-vue/src/views/CustomerCreateView.vue",
+        "src/frontend-vue/src/views/CustomerEditView.vue",
+        "src/frontend-vue/src/stores/customers.ts",
+        "src/frontend-vue/src/api/customers.ts",
+        "tests/smoke-crud.sh",
+        "tests/browser/customers.spec.ts"
+      ],
+      "verification_commands": [
+        "dotnet test src/backend-net10/ShopApi.Tests --filter CustomersTests",
+        "bash tests/smoke-crud.sh",
+        "cd src/frontend-vue && npm run type-check && npm run build",
+        "npx playwright test tests/browser/customers.spec.ts"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    },
+    {
+      "schema_version": 1,
+      "id": "T05",
+      "title": "Interactions — API + Vue details view with log-interaction dialog",
+      "risk": "normal",
+      "risk_reasons": [
+        "Mutating endpoint (create interaction) but behind existing auth and CSRF guards"
+      ],
+      "depends_on": ["T04"],
+      "owns": [
+        "src/backend-net10/ShopApi/Controllers/InteractionsController.cs",
+        "src/backend-net10/ShopApi/Models/InteractionDto.cs",
+        "src/backend-net10/ShopApi.Tests/InteractionsTests.cs",
+        "src/frontend-vue/src/views/CustomerDetailsView.vue",
+        "src/frontend-vue/src/stores/interactions.ts",
+        "src/frontend-vue/src/api/interactions.ts",
+        "tests/browser/interactions.spec.ts"
+      ],
+      "verification_commands": [
+        "dotnet test src/backend-net10/ShopApi.Tests --filter InteractionsTests",
+        "bash tests/smoke-crud.sh",
+        "cd src/frontend-vue && npm run type-check && npm run build",
+        "npx playwright test tests/browser/interactions.spec.ts"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    },
+    {
+      "schema_version": 1,
+      "id": "T06",
+      "title": "Reports + parity gate + cutover (delete old app)",
+      "risk": "high",
+      "risk_reasons": [
+        "Irreversible deletion of the old src/backend/ and src/frontend/ codebase",
+        "Final parity gate that determines whether the migration is accepted"
+      ],
+      "depends_on": ["T05"],
+      "owns": [
+        "src/backend-net10/ShopApi/Controllers/ReportsController.cs",
+        "src/backend-net10/ShopApi/Models/ReportDto.cs",
+        "src/backend-net10/ShopApi.Tests/ReportsTests.cs",
+        "src/frontend-vue/src/views/ReportsView.vue",
+        "src/frontend-vue/src/stores/reports.ts",
+        "src/frontend-vue/src/api/reports.ts",
+        "tests/browser/reports.spec.ts"
+      ],
+      "verification_commands": [
+        "dotnet test src/backend-net10/ShopApi.Tests",
+        "bash tests/smoke-auth.sh && bash tests/smoke-content.sh && bash tests/smoke-crud.sh",
+        "cd src/frontend-vue && npm run type-check && npm run build",
+        "npx playwright test tests/browser/"
+      ],
+      "spec_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e",
+      "approval_hash": "a5646e10dfb81f9202e2e333efb64b3651932df00bc4f9d70725d4a189c1433e"
+    }
+  ]
+}
